@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Contenidos - Campus</title>
+<style>
+  :root{
+    --navy:#003366;
+    --navy-light:#e0f2fe;
+    --grey-bg:#f4f6f9;
+    --grey-border:#e2e8f0;
+    --text:#1e293b;
+    --muted:#64748b;
+    --danger:#c0392b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Arial, sans-serif;
+    background:var(--grey-bg);
+    color:var(--text);
+  }
+  header.app-header{
+    background:var(--navy);
+    color:#fff;
+    padding:22px 30px;
+  }
+  header.app-header h1{margin:0;font-size:1.3rem;}
+  header.app-header p{margin:6px 0 0;font-size:0.9rem;color:#cbd5e1;}
+
+  footer.app-footer{
+    text-align:center;
+    padding:22px 20px 30px;
+    color:var(--muted);
+    font-size:0.8rem;
+  }
+  footer.app-footer strong{color:var(--navy);}
+
+  .tabs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    background:#fff;
+    padding:10px 24px 0;
+    border-bottom:1px solid var(--grey-border);
+  }
+  .tab-btn{
+    border:none;
+    background:transparent;
+    padding:12px 18px;
+    font-size:0.95rem;
+    font-weight:600;
+    color:var(--muted);
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+    border-radius:8px 8px 0 0;
+  }
+  .tab-btn:hover{background:#f1f5f9;}
+  .tab-btn.active{color:var(--navy);border-bottom:3px solid var(--navy);}
+
+  main{padding:24px;max-width:1400px;margin:0 auto;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .howto{
+    background:#eef6ff;
+    border:1px solid #bfdbfe;
+    border-radius:10px;
+    padding:14px 18px;
+    margin-bottom:20px;
+    font-size:0.9rem;
+    color:#1e3a5f;
+  }
+  .howto b{color:var(--navy);}
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  @media (max-width:1000px){
+    .grid{grid-template-columns:1fr;}
+  }
+
+  .panel-box{
+    background:#fff;
+    border:1px solid var(--grey-border);
+    border-radius:12px;
+    padding:20px;
+  }
+  .panel-box h3{margin:0 0 14px;font-size:1rem;color:var(--navy);}
+
+  label{
+    display:block;
+    font-size:0.82rem;
+    font-weight:600;
+    color:var(--muted);
+    margin:12px 0 4px;
+  }
+  input[type="text"], textarea, select{
+    width:100%;
+    padding:8px 10px;
+    border:1px solid #cbd5e1;
+    border-radius:6px;
+    font-size:0.88rem;
+    font-family:inherit;
+  }
+  textarea{resize:vertical;}
+
+  .btn{
+    display:inline-block;
+    background:var(--navy);
+    color:#fff;
+    border:none;
+    padding:9px 16px;
+    border-radius:6px;
+    font-size:0.85rem;
+    font-weight:600;
+    cursor:pointer;
+    margin-top:8px;
+  }
+  .btn:hover{background:#00264d;}
+  .btn.secondary{background:#fff;color:var(--navy);border:1px solid var(--navy);}
+  .btn.danger{background:#fff;color:var(--danger);border:1px solid var(--danger);padding:5px 10px;font-size:0.78rem;}
+  .btn.danger:hover{background:var(--danger);color:#fff;}
+  .btn.small{padding:5px 10px;font-size:0.78rem;}
+
+  .item-card{
+    border:1px solid var(--grey-border);
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:14px;
+    background:#f8fafc;
+  }
+  .item-card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .item-card-head strong{color:var(--navy);font-size:0.9rem;}
+
+  .subrow{
+    display:grid;
+    grid-template-columns:90px 1fr 1fr auto;
+    gap:8px;
+    align-items:end;
+    margin-bottom:8px;
+  }
+  @media (max-width:700px){
+    .subrow{grid-template-columns:1fr;}
+  }
+
+  .preview-frame{
+    background:#f1f5f9;
+    border:1px dashed #94a3b8;
+    border-radius:10px;
+    padding:16px;
+    max-height:600px;
+    overflow:auto;
+  }
+
+  .code-box{
+    margin-top:16px;
+  }
+  .code-box textarea{
+    width:100%;
+    height:160px;
+    font-family:'Consolas', monospace;
+    font-size:0.78rem;
+    background:#0f172a;
+    color:#d1fae5;
+    border-radius:8px;
+    padding:12px;
+    border:none;
+  }
+  .copy-feedback{
+    margin-left:10px;
+    color:#16a34a;
+    font-weight:600;
+    font-size:0.85rem;
+    display:none;
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>🛠️ Generador de Contenidos — Campus Virtual</h1>
+  <p>Completá los datos, mirá la vista previa y copiá el código para pegarlo en Moodle. No hace falta saber programar.</p>
+  <p style="margin-top:2px;color:#93c5fd;font-size:0.78rem;">Herramienta creada por el Área de Sistemas — Escuela Judicial CAM</p>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="cronograma">📅 Cronograma</button>
+  <button class="tab-btn" data-tab="alumnos">👥 Lista de alumnos</button>
+  <button class="tab-btn" data-tab="lectura">📚 Material de lectura</button>
+  <button class="tab-btn" data-tab="audiovisual">🎬 Material audiovisual</button>
+</nav>
+
+<main>
+
+  <!-- ==================== TAB CRONOGRAMA ==================== -->
+  <section id="tab-cronograma" class="tab-panel active">
+    <div class="howto">
+      <b>Cómo usarlo:</b> escribí el nombre de la materia, agregá una tarjeta por cada clase, elegí el tipo de clase
+      (presencial, por grupos, virtual/asincrónica o cierre) y completá las fechas. La vista previa se actualiza sola.
+    </div>
+    <div class="grid">
+      <div class="panel-box">
+        <h3>1. Datos generales</h3>
+        <label>Nombre del espacio curricular (materia)</label>
+        <input type="text" id="cr-materia" value="Nombre de la Materia" oninput="renderCronograma()">
+
+        <h3 style="margin-top:22px;">2. Clases</h3>
+        <div id="cr-clases"></div>
+        <button class="btn secondary" onclick="addClase()">+ Agregar clase</button>
+      </div>
+
+      <div>
+        <div class="panel-box">
+          <h3>Vista previa</h3>
+          <div id="cr-preview" class="preview-frame"></div>
+        </div>
+        <div class="panel-box code-box">
+          <h3>Código para pegar en Moodle
+            <button class="btn small" onclick="copyCode('cr-code','cr-feedback')">📋 Copiar código</button>
+            <span class="copy-feedback" id="cr-feedback">¡Copiado!</span>
+          </h3>
+          <textarea id="cr-code" readonly></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB ALUMNOS ==================== -->
+  <section id="tab-alumnos" class="tab-panel">
+    <div class="howto">
+      <b>Cómo usarlo:</b> escribí el título y la materia, y pegá la lista de alumnos con <b>un nombre por línea</b>
+      (podés copiarla directo desde Moodle o Excel). No importa si son 10 o 130 alumnos.
+    </div>
+    <div class="grid">
+      <div class="panel-box">
+        <h3>1. Datos</h3>
+        <label>Título</label>
+        <input type="text" id="al-titulo" value="Alumnos habilitados para rendir el examen final" oninput="renderAlumnos()">
+        <label>Espacio curricular</label>
+        <input type="text" id="al-subtitulo" value="Nombre de la Materia" oninput="renderAlumnos()">
+        <label>Lista de alumnos (uno por línea)</label>
+        <textarea id="al-lista" rows="14" oninput="renderAlumnos()">Ahumada Eugenia María
+Ahumada Jorgelina Nahir
+Alba Clara Raquel
+Albornoz Mena María Eliana</textarea>
+        <label>Texto de pie (opcional)</label>
+        <input type="text" id="al-footer" value="Sistemas Escuela Judicial CAM" oninput="renderAlumnos()">
+      </div>
+
+      <div>
+        <div class="panel-box">
+          <h3>Vista previa</h3>
+          <div id="al-preview" class="preview-frame"></div>
+        </div>
+        <div class="panel-box code-box">
+          <h3>Código para pegar en Moodle
+            <button class="btn small" onclick="copyCode('al-code','al-feedback')">📋 Copiar código</button>
+            <span class="copy-feedback" id="al-feedback">¡Copiado!</span>
+          </h3>
+          <textarea id="al-code" readonly></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB LECTURA ==================== -->
+  <section id="tab-lectura" class="tab-panel">
+    <div class="howto">
+      <b>Cómo usarlo:</b> agregá una fila por cada PDF. Pegá el título, el enlace al archivo (lo sacás de Moodle:
+      subís el PDF y copiás su dirección) y, si hace falta, una aclaración en rojo (por ejemplo "Solo capítulos 3 y 4").
+    </div>
+    <div class="grid">
+      <div class="panel-box">
+        <h3>1. Datos generales</h3>
+        <label>Subtítulo</label>
+        <input type="text" id="le-subtitulo" value="Lectura obligatoria para el módulo." oninput="renderLectura()">
+
+        <h3 style="margin-top:22px;">2. Textos</h3>
+        <div id="le-items"></div>
+        <button class="btn secondary" onclick="addLecturaItem()">+ Agregar texto</button>
+
+        <label style="margin-top:18px;">Texto de pie (opcional)</label>
+        <input type="text" id="le-footer" value="⚠️ Si desea descargar los archivos para leerlos sin conexión, haga clic en los enlaces que aparecen debajo de este recuadro." oninput="renderLectura()">
+      </div>
+
+      <div>
+        <div class="panel-box">
+          <h3>Vista previa</h3>
+          <div id="le-preview" class="preview-frame"></div>
+        </div>
+        <div class="panel-box code-box">
+          <h3>Código para pegar en Moodle
+            <button class="btn small" onclick="copyCode('le-code','le-feedback')">📋 Copiar código</button>
+            <span class="copy-feedback" id="le-feedback">¡Copiado!</span>
+          </h3>
+          <textarea id="le-code" readonly></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB AUDIOVISUAL ==================== -->
+  <section id="tab-audiovisual" class="tab-panel">
+    <div class="howto">
+      <b>Cómo usarlo:</b> agregá una fila por cada video. Pegá el título y el enlace de YouTube (o del sitio que uses).
+    </div>
+    <div class="grid">
+      <div class="panel-box">
+        <h3>1. Datos generales</h3>
+        <label>Título del bloque</label>
+        <input type="text" id="av-titulo" value="Material Audiovisual" oninput="renderAudiovisual()">
+        <label>Subtítulo</label>
+        <input type="text" id="av-subtitulo" value="Recursos multimedia." oninput="renderAudiovisual()">
+
+        <h3 style="margin-top:22px;">2. Videos</h3>
+        <div id="av-items"></div>
+        <button class="btn secondary" onclick="addAudiovisualItem()">+ Agregar video</button>
+
+        <label style="margin-top:18px;">Texto de pie (opcional)</label>
+        <input type="text" id="av-footer" value="Para ver los videos en su canal de origen, haga clic en los links que se encuentran en la parte inferior de este recuadro." oninput="renderAudiovisual()">
+      </div>
+
+      <div>
+        <div class="panel-box">
+          <h3>Vista previa</h3>
+          <div id="av-preview" class="preview-frame"></div>
+        </div>
+        <div class="panel-box code-box">
+          <h3>Código para pegar en Moodle
+            <button class="btn small" onclick="copyCode('av-code','av-feedback')">📋 Copiar código</button>
+            <span class="copy-feedback" id="av-feedback">¡Copiado!</span>
+          </h3>
+          <textarea id="av-code" readonly></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="app-footer">
+  🛠️ Herramienta creada por el <strong>Área de Sistemas de la Escuela Judicial CAM</strong>
+</footer>
+
+<script>
+/* ==================== UTILIDADES ==================== */
+function esc(str){
+  if(!str) return "";
+  return str
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+function escAttr(str){
+  if(!str) return "";
+  return str.replace(/"/g,"&quot;");
+}
+function copyCode(textareaId, feedbackId){
+  const ta = document.getElementById(textareaId);
+  ta.select();
+  ta.setSelectionRange(0, 999999);
+  navigator.clipboard.writeText(ta.value).then(()=>{
+    const fb = document.getElementById(feedbackId);
+    fb.style.display = "inline";
+    setTimeout(()=>{ fb.style.display = "none"; }, 1800);
+  }).catch(()=>{
+    document.execCommand("copy");
+  });
+}
+function switchTab(tabName){
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active", b.dataset.tab===tabName));
+  document.querySelectorAll(".tab-panel").forEach(p=>p.classList.toggle("active", p.id==="tab-"+tabName));
+}
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>switchTab(btn.dataset.tab));
+});
+
+/* ==================== CRONOGRAMA ==================== */
+let claseCount = 0;
+
+function addClase(tipo){
+  claseCount++;
+  const id = "clase-" + claseCount;
+  const wrap = document.createElement("div");
+  wrap.className = "item-card";
+  wrap.id = id;
+  wrap.innerHTML = `
+    <div class="item-card-head">
+      <strong class="clase-numero">Clase</strong>
+      <button class="btn danger" onclick="removeClase('${id}')">🗑 Eliminar</button>
+    </div>
+    <label>Tipo de clase</label>
+    <select class="clase-tipo" onchange="toggleClaseTipo('${id}')">
+      <option value="presencial">Presencial (todos)</option>
+      <option value="grupos">Distribución por grupos</option>
+      <option value="asincronica">Virtual / Asincrónica</option>
+      <option value="cierre">Cierre</option>
+    </select>
+
+    <div class="campos-presencial">
+      <label>Destinatarios</label>
+      <input type="text" class="cp-destinatarios" value="TODAS las comisiones">
+      <label>Fecha y horario</label>
+      <input type="text" class="cp-fecha" value="Jueves 11 de junio - 15.30/18.30">
+      <label>Lugar</label>
+      <input type="text" class="cp-lugar" value="Tribunal de Cuentas">
+    </div>
+
+    <div class="campos-grupos" style="display:none;">
+      <div class="subgrupos"></div>
+      <button class="btn secondary small" onclick="addSubgrupo('${id}')">+ Agregar grupo / comisión</button>
+    </div>
+
+    <div class="campos-asincronica" style="display:none;">
+      <label>Descripción</label>
+      <textarea class="ca-descripcion" rows="2">Se habilitará un material audiovisual en la plataforma acompañado de una tarea obligatoria de control de lectura.</textarea>
+      <label>Disponible desde</label>
+      <input type="text" class="ca-desde" value="25 de junio">
+      <label>Plazo hasta</label>
+      <input type="text" class="ca-hasta" value="2 de julio">
+    </div>
+
+    <div class="campos-cierre" style="display:none;">
+      <label>Destinatarios</label>
+      <input type="text" class="cc-destinatarios" value="TODOS los alumnos (Cierre conjunto)">
+      <label>Fecha</label>
+      <input type="text" class="cc-fecha" value="Jueves 20 de agosto">
+      <label>Horario y lugar</label>
+      <input type="text" class="cc-horario" value="15:00 a 19:30 - Tribunal de Cuentas">
+    </div>
+  `;
+  document.getElementById("cr-clases").appendChild(wrap);
+  wrap.querySelectorAll("input, textarea, select").forEach(el=>{
+    el.addEventListener("input", renderCronograma);
+    el.addEventListener("change", renderCronograma);
+  });
+  if(tipo){ wrap.querySelector(".clase-tipo").value = tipo; }
+  toggleClaseTipo(id);
+  renumberClases();
+  renderCronograma();
+}
+
+function removeClase(id){
+  document.getElementById(id).remove();
+  renumberClases();
+  renderCronograma();
+}
+
+function renumberClases(){
+  document.querySelectorAll("#cr-clases .item-card").forEach((card, i)=>{
+    card.querySelector(".clase-numero").textContent = "Clase " + (i+1);
+  });
+}
+
+function toggleClaseTipo(id){
+  const card = document.getElementById(id);
+  const tipo = card.querySelector(".clase-tipo").value;
+  card.querySelector(".campos-presencial").style.display = tipo==="presencial" ? "block":"none";
+  card.querySelector(".campos-grupos").style.display = tipo==="grupos" ? "block":"none";
+  card.querySelector(".campos-asincronica").style.display = tipo==="asincronica" ? "block":"none";
+  card.querySelector(".campos-cierre").style.display = tipo==="cierre" ? "block":"none";
+  if(tipo==="grupos" && card.querySelectorAll(".subgrupos .subrow").length===0){
+    addSubgrupo(id);
+    addSubgrupo(id);
+  }
+}
+
+function addSubgrupo(claseId){
+  const container = document.querySelector("#"+claseId+" .subgrupos");
+  const row = document.createElement("div");
+  row.className = "subrow";
+  row.innerHTML = `
+    <div>
+      <label>Ícono</label>
+      <select class="sg-icono">
+        <option value="🔹">🔹 Presencial</option>
+        <option value="💻">💻 Virtual</option>
+      </select>
+    </div>
+    <div>
+      <label>Etiqueta</label>
+      <input type="text" class="sg-etiqueta" value="Grupo 1">
+    </div>
+    <div>
+      <label>Detalle (fecha, horario, lugar)</label>
+      <input type="text" class="sg-detalle" value="Martes 16 de junio - 15.30/18.30 - Lugar: Caja de Previsión">
+    </div>
+    <button class="btn danger" onclick="this.closest('.subrow').remove(); renderCronograma();">🗑</button>
+  `;
+  container.appendChild(row);
+  row.querySelectorAll("input, select").forEach(el=>{
+    el.addEventListener("input", renderCronograma);
+    el.addEventListener("change", renderCronograma);
+  });
+  renderCronograma();
+}
+
+function buildClaseHTML(card, numero){
+  const tipo = card.querySelector(".clase-tipo").value;
+
+  if(tipo === "presencial"){
+    const dest = esc(card.querySelector(".cp-destinatarios").value);
+    const fecha = esc(card.querySelector(".cp-fecha").value);
+    const lugar = esc(card.querySelector(".cp-lugar").value);
+    return `<div style="background: #f8fafc; border-left: 5px solid #003366; border-radius: 8px; padding: 16px; border-top: 1px solid #edf2f7; border-right: 1px solid #edf2f7; border-bottom: 1px solid #edf2f7;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;"><span style="color: #003366; font-weight: 800; font-size: 0.95rem; text-transform: uppercase;">📍 Clase ${numero}</span> <span style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; font-weight: bold; padding: 2px 10px; border-radius: 50px; text-transform: uppercase;">Presencial</span></div>
+<p style="margin: 0; font-size: 0.9rem; color: #1e293b; font-weight: 600;"><strong style="color: #475569;">Destinatarios:</strong> ${dest}</p>
+<p style="margin: 4px 0 0 0; font-size: 0.9rem; color: #0f172a;">🗓️ <strong>Fecha:</strong> ${fecha}<br /> 🏢 <strong>Lugar:</strong> ${lugar}</p>
+</div>`;
+  }
+
+  if(tipo === "grupos"){
+    const filas = Array.from(card.querySelectorAll(".subgrupos .subrow")).map(row=>{
+      const icono = row.querySelector(".sg-icono").value;
+      const etiqueta = esc(row.querySelector(".sg-etiqueta").value);
+      const detalle = esc(row.querySelector(".sg-detalle").value);
+      return `<div>${icono} <strong>${etiqueta}:</strong> ${detalle}</div>`;
+    }).join("\n");
+    return `<div style="background: #ffffff; border-left: 5px solid #003366; border-radius: 8px; padding: 16px; border-top: 1px solid #edf2f7; border-right: 1px solid #edf2f7; border-bottom: 1px solid #edf2f7;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><span style="color: #003366; font-weight: 800; font-size: 0.95rem; text-transform: uppercase;">👥 Clase ${numero}</span> <span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: bold; padding: 2px 10px; border-radius: 50px; text-transform: uppercase;">Distribución por grupos</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem; color: #334155;">
+${filas}
+</div>
+</div>`;
+  }
+
+  if(tipo === "asincronica"){
+    const desc = esc(card.querySelector(".ca-descripcion").value);
+    const desde = esc(card.querySelector(".ca-desde").value);
+    const hasta = esc(card.querySelector(".ca-hasta").value);
+    return `<div style="background: #fdf4ff; border-left: 5px solid #d946ef; border-radius: 8px; padding: 16px; border-top: 1px solid #fae8ff; border-right: 1px solid #fae8ff; border-bottom: 1px solid #fae8ff;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;"><span style="color: #701a75; font-weight: 800; font-size: 0.95rem; text-transform: uppercase;">🖥️ Clase ${numero} — Modalidad Asincrónica</span> <span style="background: #fae8ff; color: #a21caf; font-size: 0.75rem; font-weight: bold; padding: 2px 10px; border-radius: 50px; text-transform: uppercase;">Campus Virtual</span></div>
+<p style="margin: 0 0 8px 0; font-size: 0.85rem; color: #4a044e; font-weight: 500; line-height: 1.4;">${desc}</p>
+<div style="background: #ffffff; border-radius: 6px; padding: 8px 12px; display: inline-flex; gap: 15px; font-size: 0.85rem; border: 1px solid #f3e8ff;"><span style="color: #1e293b;">🟢 <strong>Disponible desde:</strong> ${desde}</span> <span style="color: #991b1b;">🔴 <strong>Plazo hasta:</strong> ${hasta}</span></div>
+</div>`;
+  }
+
+  // cierre
+  const dest = esc(card.querySelector(".cc-destinatarios").value);
+  const fecha = esc(card.querySelector(".cc-fecha").value);
+  const horario = esc(card.querySelector(".cc-horario").value);
+  return `<div style="background: #f0fdf4; border-left: 5px solid #22c55e; border-radius: 8px; padding: 16px; border-top: 1px solid #dcfce7; border-right: 1px solid #dcfce7; border-bottom: 1px solid #dcfce7;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;"><span style="color: #14532d; font-weight: 800; font-size: 0.95rem; text-transform: uppercase;">🏁 Clase ${numero} — Cierre</span> <span style="background: #dcfce7; color: #166534; font-size: 0.75rem; font-weight: bold; padding: 2px 10px; border-radius: 50px; text-transform: uppercase;">Presencial Obligatorio</span></div>
+<p style="margin: 0; font-size: 0.9rem; color: #14532d; font-weight: bold;">Destinatarios: ${dest}</p>
+<p style="margin: 4px 0 0 0; font-size: 0.9rem; color: #1e293b;">🗓️ <strong>Fecha:</strong> ${fecha} <br /> ⏰ <strong>Horario:</strong> ${horario}</p>
+</div>`;
+}
+
+function renderCronograma(){
+  const materia = esc(document.getElementById("cr-materia").value);
+  const bloques = Array.from(document.querySelectorAll("#cr-clases .item-card")).map((card, i)=>{
+    return buildClaseHTML(card, i+1);
+  }).join("\n");
+
+  const html = `<div style="background: #ffffff; border: 1px solid #edf2f7; border-radius: 16px; padding: 35px; font-family: 'Segoe UI', -apple-system, sans-serif; max-width: 850px; margin: 20px auto; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);">
+<div style="border-bottom: 3px solid #003366; padding-bottom: 12px; margin-bottom: 30px; display: flex; align-items: center; gap: 12px;"><span style="font-size: 1.5rem;">📅</span>
+<div>
+<h3 style="margin: 0; color: #003366; font-size: 1.25rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Cronograma de Clases y Modalidades</h3>
+<p style="margin: 2px 0 0 0; color: #64748b; font-size: 0.85rem; font-weight: 500;">Espacio Curricular: ${materia}</p>
+</div>
+</div>
+<div style="display: grid; gap: 16px;">
+${bloques}
+</div>
+<p style="margin: 20px 0 0 0; font-size: 0.78rem; color: #64748b; font-style: italic; text-align: center;">⚠️ Por favor, verifique el grupo y la modalidad asignada antes de asistir a los encuentros.</p>
+</div>`;
+
+  document.getElementById("cr-preview").innerHTML = html;
+  document.getElementById("cr-code").value = html;
+}
+
+// clase inicial de ejemplo
+addClase("presencial");
+addClase("grupos");
+addClase("asincronica");
+addClase("cierre");
+
+/* ==================== LISTA DE ALUMNOS ==================== */
+function renderAlumnos(){
+  const titulo = esc(document.getElementById("al-titulo").value);
+  const subtitulo = esc(document.getElementById("al-subtitulo").value);
+  const footer = esc(document.getElementById("al-footer").value);
+  const nombres = document.getElementById("al-lista").value
+    .split("\n")
+    .map(n=>n.trim())
+    .filter(n=>n.length>0);
+
+  const filas = nombres.map(n=>`<p style="margin: 0 0 8px 0;">${esc(n)}</p>`).join("\n");
+
+  const html = `<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 40px; font-family: 'Segoe UI', sans-serif; max-width: 1000px; margin: 20px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-top: 8px solid #003366;">
+<div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px;">
+<h2 style="margin: 0; color: #003366; font-size: 1.8rem; font-weight: 900;">${titulo}</h2>
+<p style="margin: 5px 0 0 0; color: #64748b; font-size: 1rem;">Espacio Curricular: ${subtitulo}</p>
+</div>
+<div style="column-count: 3; column-gap: 40px; column-rule: 1px solid #f1f5f9; color: #334155; font-size: 0.85rem; line-height: 1.6;">
+${filas}
+</div>
+<div style="margin-top: 30px; color: #94a3b8; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; text-align: right;">${footer}</div>
+</div>`;
+
+  document.getElementById("al-preview").innerHTML = html;
+  document.getElementById("al-code").value = html;
+}
+renderAlumnos();
+
+/* ==================== MATERIAL DE LECTURA ==================== */
+let lecturaCount = 0;
+function addLecturaItem(titulo, url, nota){
+  lecturaCount++;
+  const id = "le-item-" + lecturaCount;
+  const div = document.createElement("div");
+  div.className = "item-card";
+  div.id = id;
+  div.innerHTML = `
+    <div class="item-card-head">
+      <strong>Texto</strong>
+      <button class="btn danger" onclick="document.getElementById('${id}').remove(); renderLectura();">🗑 Eliminar</button>
+    </div>
+    <label>Título</label>
+    <input type="text" class="le-item-titulo" value="${escAttr(titulo || 'Título del texto')}">
+    <label>Enlace al PDF</label>
+    <input type="text" class="le-item-url" value="${escAttr(url || 'https://')}">
+    <label>Aclaración importante (opcional, se muestra en rojo)</label>
+    <input type="text" class="le-item-nota" value="${escAttr(nota || '')}">
+  `;
+  document.getElementById("le-items").appendChild(div);
+  div.querySelectorAll("input").forEach(el=>el.addEventListener("input", renderLectura));
+  renderLectura();
+}
+
+function renderLectura(){
+  const subtitulo = esc(document.getElementById("le-subtitulo").value);
+  const footer = esc(document.getElementById("le-footer").value);
+
+  const items = Array.from(document.querySelectorAll("#le-items .item-card")).map(card=>{
+    const titulo = esc(card.querySelector(".le-item-titulo").value);
+    const url = escAttr(card.querySelector(".le-item-url").value);
+    const nota = card.querySelector(".le-item-nota").value.trim();
+    const notaHTML = nota
+      ? `<div><span style="display: block; font-weight: 600; color: #444; font-size: 0.95rem;">${titulo}</span> <span style="font-size: 0.75rem; color: #d9534f; font-weight: bold;">${esc(nota)}</span></div>`
+      : `<span style="font-weight: 600; color: #444; font-size: 0.95rem;">${titulo}</span>`;
+    return `<div style="background-color: #fdfdfd; border: 1px solid #eee; border-radius: 8px; padding: 15px; display: flex; align-items: center; justify-content: space-between;">
+<div style="display: flex; align-items: center;"><span style="font-size:1.4rem; margin-right: 15px;">📄</span> ${notaHTML}</div>
+<a href="${url}" target="_blank" style="background-color: #003366; color: white; padding: 8px 18px; border-radius: 5px; text-decoration: none; font-size: 0.85rem; font-weight: bold;">VER TEXTO</a></div>`;
+  }).join("\n");
+
+  const html = `<div style="background-color: #ffffff; border: 1px solid #e0e0e0; border-left: 6px dotted #003366; border-radius: 12px; padding: 25px; max-width: 850px; margin: 15px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); font-family: 'Segoe UI', Arial, sans-serif;">
+<div style="display: flex; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+<div style="background-color: #f0f4f8; padding: 12px; border-radius: 8px; margin-right: 15px; font-size: 1.6rem; line-height: 1;">📚</div>
+<div>
+<h4 style="margin: 0; color: #003366; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">MATERIAL DE LECTURA</h4>
+<p style="margin: 0; color: #666; font-size: 0.9rem;">${subtitulo}</p>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px;">
+${items}
+</div>
+<div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: center;">
+<p style="margin: 0; color: #666; font-size: 0.9rem; font-style: italic;">${footer}</p>
+</div>
+</div>`;
+
+  document.getElementById("le-preview").innerHTML = html;
+  document.getElementById("le-code").value = html;
+}
+
+// items de ejemplo
+addLecturaItem("Ética del Abogado y modelos de ética normativa", "https://campus.escuelacamtucuman.gob.ar/pluginfile.php/...", "");
+addLecturaItem("Filosofía Moral - J. Rachels", "https://campus.escuelacamtucuman.gob.ar/pluginfile.php/...", "IMPORTANTE: Solo Capítulos 7, 8, 9 y 10");
+
+/* ==================== MATERIAL AUDIOVISUAL ==================== */
+let audiovisualCount = 0;
+function addAudiovisualItem(titulo, url){
+  audiovisualCount++;
+  const id = "av-item-" + audiovisualCount;
+  const div = document.createElement("div");
+  div.className = "item-card";
+  div.id = id;
+  div.innerHTML = `
+    <div class="item-card-head">
+      <strong>Video</strong>
+      <button class="btn danger" onclick="document.getElementById('${id}').remove(); renderAudiovisual();">🗑 Eliminar</button>
+    </div>
+    <label>Título</label>
+    <input type="text" class="av-item-titulo" value="${escAttr(titulo || 'Título del video')}">
+    <label>Enlace (YouTube u otro)</label>
+    <input type="text" class="av-item-url" value="${escAttr(url || 'https://')}">
+  `;
+  document.getElementById("av-items").appendChild(div);
+  div.querySelectorAll("input").forEach(el=>el.addEventListener("input", renderAudiovisual));
+  renderAudiovisual();
+}
+
+function renderAudiovisual(){
+  const titulo = esc(document.getElementById("av-titulo").value);
+  const subtitulo = esc(document.getElementById("av-subtitulo").value);
+  const footer = esc(document.getElementById("av-footer").value);
+
+  const items = Array.from(document.querySelectorAll("#av-items .item-card")).map(card=>{
+    const t = esc(card.querySelector(".av-item-titulo").value);
+    const url = escAttr(card.querySelector(".av-item-url").value);
+    return `<div style="background-color: #fdfdfd; border: 1px solid #eee; border-radius: 8px; padding: 15px; display: flex; align-items: center; justify-content: space-between;">
+<div style="display: flex; align-items: center;"><span style="font-size:1.3rem; margin-right: 15px;">▶️</span> <span style="font-weight: 600; color: #444; font-size: 0.95rem;">${t}</span></div>
+<a href="${url}" target="_blank" style="background-color: #d9534f; color: white; padding: 8px 18px; border-radius: 5px; text-decoration: none; font-size: 0.85rem; font-weight: bold;">VER VIDEO</a></div>`;
+  }).join("\n");
+
+  const html = `<div style="background-color: #ffffff; border: 1px solid #e0e0e0; border-left: 6px solid #d9534f; border-radius: 12px; padding: 25px; max-width: 850px; margin: 15px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); font-family: 'Segoe UI', Arial, sans-serif;">
+<div style="display: flex; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+<div style="background-color: #fdf2f2; padding: 12px; border-radius: 8px; margin-right: 15px; font-size: 1.6rem; line-height: 1;">🎬</div>
+<div>
+<h4 style="margin: 0; color: #b02a26; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${titulo}</h4>
+<p style="margin: 0; color: #666; font-size: 0.9rem;">${subtitulo}</p>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px;">
+${items}
+</div>
+<div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #d9534f; text-align: center;">
+<p style="margin: 0; color: #777; font-size: 0.85rem; font-style: italic;">${footer}</p>
+</div>
+</div>`;
+
+  document.getElementById("av-preview").innerHTML = html;
+  document.getElementById("av-code").value = html;
+}
+
+// items de ejemplo
+addAudiovisualItem("¿Qué debo hacer? Los dilemas morales", "https://www.youtube.com/watch?v=...");
+addAudiovisualItem("John Stuart Mill - Defensa del Utilitarismo", "https://www.youtube.com/watch?v=...");
+</script>
+</body>
+</html>

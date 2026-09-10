@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Asistencia Zoom → Lista de alumnos</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#1c2a24;
+    --ink-soft:#4b5b53;
+    --paper:#faf8f3;
+    --card:#ffffff;
+    --line:#dfe0d6;
+    --accent:#2f6b4f;
+    --accent-soft:#e6efe8;
+    --danger:#a3402f;
+    --danger-soft:#f7e8e4;
+    --warn:#8a6d1f;
+    --warn-soft:#f6efd9;
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    padding:2.5rem 1.5rem 5rem;
+  }
+  .wrap{max-width:880px;margin:0 auto;}
+  h1{
+    font-size:1.5rem;
+    font-weight:600;
+    margin:0 0 .25rem;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{color:var(--ink-soft);font-size:.95rem;margin:0 0 2.5rem;}
+  .step{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:1.5rem 1.75rem;
+    margin-bottom:1.5rem;
+  }
+  .step-head{
+    display:flex;
+    align-items:center;
+    gap:.75rem;
+    margin-bottom:1rem;
+  }
+  .step-num{
+    width:26px;height:26px;
+    border-radius:50%;
+    background:var(--accent);
+    color:#fff;
+    font-size:.85rem;
+    font-weight:600;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .step-title{font-weight:600;font-size:1.05rem;}
+  .step-desc{color:var(--ink-soft);font-size:.9rem;margin:0 0 1rem;line-height:1.5;}
+  .row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;}
+  input[type="file"]{
+    font-size:.85rem;
+  }
+  input[type="text"]{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:.5rem .7rem;
+    font-size:.9rem;
+    font-family:inherit;
+  }
+  button{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:.55rem 1rem;
+    font-size:.88rem;
+    font-weight:500;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  button.secondary{
+    background:transparent;
+    color:var(--accent);
+    border:1px solid var(--accent);
+  }
+  button.ghost{
+    background:transparent;
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+  }
+  button:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+  }
+  button:hover:not(:disabled){filter:brightness(0.95);}
+  .status{
+    font-size:.85rem;
+    margin-top:.75rem;
+    padding:.6rem .8rem;
+    border-radius:8px;
+    display:none;
+  }
+  .status.ok{display:block;background:var(--accent-soft);color:var(--accent);}
+  .status.err{display:block;background:var(--danger-soft);color:var(--danger);}
+  .status.warn{display:block;background:var(--warn-soft);color:var(--warn);}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.85rem;
+    margin-top:1rem;
+  }
+  th,td{
+    text-align:left;
+    padding:.5rem .6rem;
+    border-bottom:1px solid var(--line);
+  }
+  th{
+    color:var(--ink-soft);
+    font-weight:600;
+    font-size:.78rem;
+    text-transform:uppercase;
+    letter-spacing:.02em;
+  }
+  td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .pill{
+    display:inline-block;
+    padding:.15rem .55rem;
+    border-radius:999px;
+    font-size:.78rem;
+    font-weight:500;
+  }
+  .pill.si{background:var(--accent-soft);color:var(--accent);}
+  .pill.no{background:var(--danger-soft);color:var(--danger);}
+  .table-scroll{max-height:420px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;}
+  .table-scroll table{margin-top:0;}
+  .table-scroll thead th{position:sticky;top:0;background:var(--card);}
+  select{
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:.3rem .4rem;
+    font-size:.8rem;
+    font-family:inherit;
+    max-width:220px;
+  }
+  .low-score{background:var(--warn-soft) !important;}
+  .roster-count{
+    font-size:.82rem;
+    color:var(--ink-soft);
+    margin-left:auto;
+  }
+  .actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;}
+  .hint{font-size:.78rem;color:var(--ink-soft);margin-top:.5rem;line-height:1.5;}
+  .summary-row{display:flex;gap:1.5rem;margin:1rem 0 0;flex-wrap:wrap;}
+  .metric{background:var(--paper);border-radius:10px;padding:.75rem 1rem;flex:1;min-width:130px;}
+  .metric .n{font-size:1.3rem;font-weight:600;}
+  .metric .l{font-size:.78rem;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Asistencia Zoom → Lista de alumnos</h1>
+  <p class="subtitle">Cruza el reporte de participantes de Zoom con tu lista de alumnos, sumando minutos y tolerando diferencias de tipeo en los nombres.</p>
+
+  <div class="step">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <div class="step-title">Lista de alumnos</div>
+      <div class="roster-count" id="rosterCount"></div>
+    </div>
+    <p class="step-desc">Subí un CSV o Excel con columnas de nombre, apellido, correo y <strong>DNI</strong> (el DNI es opcional, pero sin él no vas a poder usar el botón "Descargar CSV para SIGEJ" de más abajo). Se guarda automáticamente para que no tengas que volver a subirla la próxima vez — actualizala solo cuando cambies de curso.</p>
+    <div class="row">
+      <input type="file" id="rosterFile" accept=".csv,.xlsx,.xls">
+      <button class="ghost" id="clearRoster">Borrar lista guardada</button>
+    </div>
+    <div class="status" id="rosterStatus"></div>
+    <div class="table-scroll" id="rosterPreview" style="display:none;max-height:220px;"></div>
+  </div>
+
+  <div class="step">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <div class="step-title">Reporte de asistencia de una clase</div>
+    </div>
+    <p class="step-desc">Subí el CSV o Excel que exportaste de Zoom para esa clase (o uno ya procesado con columnas Nombre / Apellido / Correo / Minutos).</p>
+    <div class="row">
+      <input type="text" id="claseLabel" placeholder="Nombre de la clase, ej: 2026-09-10">
+      <input type="file" id="zoomFile" accept=".csv,.xlsx,.xls">
+      <button id="procesarBtn" disabled>Procesar</button>
+    </div>
+    <div class="status" id="zoomStatus"></div>
+  </div>
+
+  <div class="step" id="resultStep" style="display:none;">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <div class="step-title">Resultado</div>
+    </div>
+    <div class="summary-row" id="summary"></div>
+
+    <div id="reviewBox" style="display:none;margin-top:1.25rem;">
+      <p class="step-desc" style="margin-bottom:.5rem;"><strong style="color:var(--warn);">Revisar coincidencias dudosas o sin match.</strong> Elegí manualmente a qué alumno corresponde cada fila (o dejalo en "Ignorar" si no es un alumno).</p>
+      <div class="table-scroll" id="reviewTable"></div>
+      <div class="actions"><button id="applyReview">Aplicar correcciones</button></div>
+    </div>
+
+    <div class="table-scroll" id="resultTable" style="margin-top:1.25rem;"></div>
+
+    <div class="actions">
+      <button id="downloadSigej">Descargar CSV para SIGEJ</button>
+      <button id="downloadXlsx">Descargar Excel (.xlsx)</button>
+      <button class="secondary" id="downloadCsv">Convertir y descargar CSV</button>
+    </div>
+    <p class="hint">El Excel incluye presente/ausente por color y minutos. El CSV "Convertir y descargar" trae Nombre, Apellido(s), Correo y Total minutos. El CSV "para SIGEJ" trae DNI, Apellido y Nombre, Minutos — listo para subir directo al importador de Zoom sin tocar nada más (los alumnos sin DNI cargado en la lista no salen en este archivo; cargalos a mano en Gestión Manual).</p>
+  </div>
+</div>
+
+<script>
+let roster = []; // {nombre, apellido, correo}
+let currentResults = []; // {nombre, apellido, correo, minutos, presente}
+let pendingReview = []; // rows needing manual match: {rawName, rawEmail, minutos, bestIdx, bestScore}
+let claseLabelUsed = "";
+
+const rosterFileInput = document.getElementById('rosterFile');
+const rosterStatus = document.getElementById('rosterStatus');
+const rosterPreview = document.getElementById('rosterPreview');
+const rosterCount = document.getElementById('rosterCount');
+const zoomFileInput = document.getElementById('zoomFile');
+const zoomStatus = document.getElementById('zoomStatus');
+const procesarBtn = document.getElementById('procesarBtn');
+const claseLabelInput = document.getElementById('claseLabel');
+const resultStep = document.getElementById('resultStep');
+const resultTable = document.getElementById('resultTable');
+const summary = document.getElementById('summary');
+const reviewBox = document.getElementById('reviewBox');
+const reviewTable = document.getElementById('reviewTable');
+
+// ---------- Normalización y matching difuso ----------
+
+function stripAccents(s){
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+
+function normalizeTokens(s){
+  if(!s) return [];
+  let t = stripAccents(String(s)).toLowerCase();
+  t = t.replace(/\(.*?\)/g,' ');
+  t = t.replace(/\bmpf\b/g,' ');
+  t = t.replace(/\bdra?\.?\b/g,' ');
+  t = t.replace(/\badyj\b/g,' ');
+  t = t.replace(/[^a-z\s]/g,' ');
+  return t.split(/\s+/).filter(Boolean);
+}
+
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  if(m===0) return n;
+  if(n===0) return m;
+  const dp=new Array(n+1);
+  for(let j=0;j<=n;j++) dp[j]=j;
+  for(let i=1;i<=m;i++){
+    let prev=dp[0];
+    dp[0]=i;
+    for(let j=1;j<=n;j++){
+      const tmp=dp[j];
+      dp[j]=Math.min(
+        dp[j]+1,
+        dp[j-1]+1,
+        prev+(a[i-1]===b[j-1]?0:1)
+      );
+      prev=tmp;
+    }
+  }
+  return dp[n];
+}
+
+function ratio(a,b){
+  const maxLen=Math.max(a.length,b.length,1);
+  return (1-levenshtein(a,b)/maxLen)*100;
+}
+
+function tokenFuzzyScore(aTokens,bTokens){
+  if(!aTokens.length||!bTokens.length) return 0;
+  const [short,long] = aTokens.length<=bTokens.length ? [aTokens,bTokens]:[bTokens,aTokens];
+  let total=0;
+  for(const t of short){
+    let best=0;
+    for(const t2 of long){
+      const r=ratio(t,t2);
+      if(r>best) best=r;
+    }
+    total+=best;
+  }
+  return total/short.length;
+}
+
+function bestMatch(nameTokens, rosterTokenList){
+  let bestIdx=-1, bestScore=-1;
+  for(let i=0;i<rosterTokenList.length;i++){
+    const s=tokenFuzzyScore(nameTokens, rosterTokenList[i]);
+    if(s>bestScore){bestScore=s;bestIdx=i;}
+  }
+  return {idx:bestIdx, score:bestScore};
+}
+
+// ---------- Lectura de archivos ----------
+
+function readFileAsRows(file){
+  return new Promise((resolve,reject)=>{
+    const name = file.name.toLowerCase();
+    if(name.endsWith('.csv')){
+      Papa.parse(file,{
+        header:true,
+        skipEmptyLines:true,
+        encoding:'UTF-8',
+        complete: r => resolve(r.data),
+        error: reject
+      });
+    } else {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try{
+          const wb = XLSX.read(e.target.result, {type:'array'});
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+          resolve(rows);
+        }catch(err){reject(err);}
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    }
+  });
+}
+
+function findKey(row, candidates){
+  const keys = Object.keys(row);
+  for(const cand of candidates){
+    const hit = keys.find(k => k.toLowerCase().trim() === cand.toLowerCase());
+    if(hit) return hit;
+  }
+  // fallback: contains
+  for(const cand of candidates){
+    const hit = keys.find(k => k.toLowerCase().includes(cand.toLowerCase()));
+    if(hit) return hit;
+  }
+  return null;
+}
+
+// ---------- Storage ----------
+
+async function saveRoster(){
+  try{
+    await window.storage.set('roster', JSON.stringify(roster), false);
+  }catch(e){ console.error('No se pudo guardar la lista', e); }
+}
+
+async function loadRoster(){
+  try{
+    const res = await window.storage.get('roster', false);
+    if(res && res.value){
+      roster = JSON.parse(res.value);
+      renderRosterPreview();
+    }
+  }catch(e){
+    // no existe todavía, ok
+  }
+}
+
+function renderRosterPreview(){
+  rosterCount.textContent = roster.length ? `${roster.length} alumnos cargados` : '';
+  if(!roster.length){ rosterPreview.style.display='none'; return; }
+  let html = '<table><thead><tr><th>Nombre</th><th>Apellido(s)</th><th>Correo</th><th>DNI</th></tr></thead><tbody>';
+  roster.slice(0,8).forEach(s=>{
+    html += `<tr><td>${escapeHtml(s.nombre)}</td><td>${escapeHtml(s.apellido)}</td><td>${escapeHtml(s.correo)}</td><td>${escapeHtml(s.dni||'—')}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  if(roster.length>8) html += `<div style="padding:.5rem .6rem;color:var(--ink-soft);font-size:.8rem;">...y ${roster.length-8} más</div>`;
+  rosterPreview.innerHTML = html;
+  rosterPreview.style.display = 'block';
+  procesarBtn.disabled = false;
+}
+
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------- Paso 1: cargar lista de alumnos ----------
+
+rosterFileInput.addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const rows = await readFileAsRows(file);
+    if(!rows.length) throw new Error('El archivo está vacío.');
+    const sample = rows[0];
+    const kNombre = findKey(sample, ['nombre']);
+    const kApellido = findKey(sample, ['apellido(s)','apellido','apellidos']);
+    const kCorreo = findKey(sample, ['correo','dirección de correo','direccion de correo','email','correo electrónico','correo electronico']);
+    const kDni = findKey(sample, ['dni','documento','nro documento','n° documento','numero documento','número de documento','nro. documento']);
+    if(!kNombre || !kCorreo){
+      throw new Error('No encontré columnas de Nombre y Correo. Verificá los encabezados del archivo.');
+    }
+    roster = rows.map(r=>({
+      nombre: (r[kNombre]||'').toString().trim(),
+      apellido: kApellido ? (r[kApellido]||'').toString().trim() : '',
+      correo: (r[kCorreo]||'').toString().trim(),
+      dni: kDni ? (r[kDni]||'').toString().replace(/[^0-9]/g,'') : ''
+    })).filter(s=>s.nombre || s.apellido);
+
+    await saveRoster();
+    renderRosterPreview();
+    const conDni = roster.filter(s=>s.dni).length;
+    rosterStatus.className = 'status ok';
+    rosterStatus.textContent = kDni
+      ? `Lista guardada: ${roster.length} alumnos (${conDni} con DNI).`
+      : `Lista guardada: ${roster.length} alumnos. No encontré columna de DNI — el botón "Descargar CSV para SIGEJ" no va a poder usarse hasta que la agregues.`;
+  }catch(err){
+    rosterStatus.className = 'status err';
+    rosterStatus.textContent = 'Error: ' + err.message;
+  }
+});
+
+document.getElementById('clearRoster').addEventListener('click', async ()=>{
+  roster = [];
+  try{ await window.storage.delete('roster', false); }catch(e){}
+  rosterPreview.style.display='none';
+  rosterCount.textContent='';
+  rosterStatus.className='status warn';
+  rosterStatus.textContent='Lista borrada. Subí una nueva para continuar.';
+  procesarBtn.disabled = true;
+});
+
+// ---------- Paso 2: procesar archivo de Zoom ----------
+
+zoomFileInput.addEventListener('change', ()=>{
+  procesarBtn.disabled = !(roster.length && zoomFileInput.files[0]);
+});
+
+procesarBtn.addEventListener('click', async ()=>{
+  const file = zoomFileInput.files[0];
+  if(!file || !roster.length) return;
+  zoomStatus.className='status';
+  zoomStatus.textContent='';
+  try{
+    const rows = await readFileAsRows(file);
+    if(!rows.length) throw new Error('El archivo de asistencia está vacío.');
+
+    claseLabelUsed = claseLabelInput.value.trim() || 'clase';
+
+    const sample = rows[0];
+    const kNombreOriginal = findKey(sample, ['nombre (nombre original)','nombre original','name (original name)','nombre']);
+    const kApellido = findKey(sample, ['apellido(s)','apellido']);
+    const kCorreo = findKey(sample, ['correo electrónico','correo electronico','correo','email','user email']);
+    const kMinutos = findKey(sample, ['duración total (minutos)','duracion total (minutos)','total minutos','total minutes','duration (minutes)','minutos']);
+
+    if(!kNombreOriginal || !kMinutos){
+      throw new Error('No encontré columnas de nombre y minutos en el archivo de Zoom.');
+    }
+
+    // preparar tokens de roster para matching
+    const rosterTokens = roster.map(s => normalizeTokens(`${s.nombre} ${s.apellido}`));
+    const rosterByEmail = {};
+    roster.forEach((s,i)=>{ if(s.correo) rosterByEmail[s.correo.toLowerCase()] = i; });
+
+    const minutosPorIdx = new Array(roster.length).fill(0);
+    pendingReview = [];
+
+    for(const row of rows){
+      const rawName = (row[kNombreOriginal]||'').toString().trim();
+      const rawApellido = kApellido ? (row[kApellido]||'').toString().trim() : '';
+      const rawEmail = kCorreo ? (row[kCorreo]||'').toString().trim() : '';
+      let minutos = parseFloat(row[kMinutos]);
+      if(isNaN(minutos)) minutos = 0;
+      if(!rawName) continue;
+      if(rawName.toLowerCase().includes('escuela judicial')) continue;
+
+      // 1) intento directo por email
+      if(rawEmail && rosterByEmail.hasOwnProperty(rawEmail.toLowerCase())){
+        minutosPorIdx[rosterByEmail[rawEmail.toLowerCase()]] += minutos;
+        continue;
+      }
+
+      // 2) fuzzy matching por nombre
+      const fullName = rawApellido ? `${rawName} ${rawApellido}` : rawName;
+      const tokens = normalizeTokens(fullName);
+      const {idx, score} = bestMatch(tokens, rosterTokens);
+
+      if(idx>=0 && score>=75){
+        minutosPorIdx[idx]+=minutos;
+      } else if(idx>=0 && score>=50){
+        pendingReview.push({rawName: fullName, rawEmail, minutos, bestIdx: idx, bestScore: score});
+      } else {
+        pendingReview.push({rawName: fullName, rawEmail, minutos, bestIdx: -1, bestScore: 0});
+      }
+    }
+
+    buildResults(minutosPorIdx);
+    renderReview();
+    renderResultTable();
+    resultStep.style.display='block';
+    zoomStatus.className='status ok';
+    zoomStatus.textContent = `Procesado: ${rows.length} filas leídas.`;
+  }catch(err){
+    zoomStatus.className='status err';
+    zoomStatus.textContent='Error: ' + err.message;
+  }
+});
+
+function buildResults(minutosPorIdx){
+  currentResults = roster.map((s,i)=>({
+    nombre: s.nombre,
+    apellido: s.apellido,
+    correo: s.correo,
+    dni: s.dni || '',
+    minutos: Math.round(minutosPorIdx[i]*10)/10,
+  }));
+}
+
+function renderReview(){
+  if(!pendingReview.length){
+    reviewBox.style.display='none';
+    return;
+  }
+  reviewBox.style.display='block';
+  let html = '<table><thead><tr><th>Nombre en Zoom</th><th>Correo</th><th class="num">Minutos</th><th>Coincidencia sugerida</th><th>Asignar a</th></tr></thead><tbody>';
+  pendingReview.forEach((r, i)=>{
+    const suggestion = r.bestIdx>=0 ? `${roster[r.bestIdx].nombre} ${roster[r.bestIdx].apellido} (${Math.round(r.bestScore)}%)` : 'sin sugerencia';
+    let options = '<option value="-1">Ignorar (no es alumno)</option>';
+    roster.forEach((s,idx)=>{
+      const sel = idx===r.bestIdx ? 'selected' : '';
+      options += `<option value="${idx}" ${sel}>${escapeHtml(s.nombre)} ${escapeHtml(s.apellido)}</option>`;
+    });
+    html += `<tr class="${r.bestScore<75?'low-score':''}">
+      <td>${escapeHtml(r.rawName)}</td>
+      <td>${escapeHtml(r.rawEmail)}</td>
+      <td class="num">${r.minutos}</td>
+      <td>${escapeHtml(suggestion)}</td>
+      <td><select data-idx="${i}">${options}</select></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  reviewTable.innerHTML = html;
+}
+
+document.getElementById('applyReview').addEventListener('click', ()=>{
+  const selects = reviewTable.querySelectorAll('select');
+  selects.forEach(sel=>{
+    const i = parseInt(sel.dataset.idx);
+    const chosen = parseInt(sel.value);
+    const r = pendingReview[i];
+    if(chosen>=0){
+      currentResults[chosen].minutos = Math.round((currentResults[chosen].minutos + r.minutos)*10)/10;
+    }
+  });
+  pendingReview = [];
+  reviewBox.style.display='none';
+  renderResultTable();
+});
+
+function renderResultTable(){
+  const presentes = currentResults.filter(r=>r.minutos>0).length;
+  const sinDni = currentResults.filter(r=>!r.dni).length;
+  summary.innerHTML = `
+    <div class="metric"><div class="n">${roster.length}</div><div class="l">Alumnos en la lista</div></div>
+    <div class="metric"><div class="n">${presentes}</div><div class="l">Presentes</div></div>
+    <div class="metric"><div class="n">${roster.length-presentes}</div><div class="l">Ausentes</div></div>
+    <div class="metric"><div class="n">${sinDni}</div><div class="l">Sin DNI (no van al CSV de SIGEJ)</div></div>
+  `;
+
+  let html = '<table><thead><tr><th>Nombre</th><th>Apellido(s)</th><th>Correo</th><th>DNI</th><th>Presente</th><th class="num">Minutos</th></tr></thead><tbody>';
+  currentResults.forEach(r=>{
+    const presente = r.minutos>0;
+    const dniHtml = r.dni ? escapeHtml(r.dni) : '<span class="pill no">Sin DNI</span>';
+    html += `<tr>
+      <td>${escapeHtml(r.nombre)}</td>
+      <td>${escapeHtml(r.apellido)}</td>
+      <td>${escapeHtml(r.correo)}</td>
+      <td>${dniHtml}</td>
+      <td><span class="pill ${presente?'si':'no'}">${presente?'Sí':'No'}</span></td>
+      <td class="num">${r.minutos}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  resultTable.innerHTML = html;
+}
+
+// ---------- Descargas ----------
+
+document.getElementById('downloadSigej').addEventListener('click', ()=>{
+  // Formato exacto que espera importar_zoom.php de SIGEJ:
+  // Columna 1 = DNI (solo números), columna 2 = lo que sea (no se lee),
+  // columna 3 = minutos totales. Separador coma, decimales con punto.
+  const conDni = currentResults.filter(r=>r.dni);
+  if(!conDni.length){
+    alert('Ningún alumno de la lista tiene DNI cargado. Volvé al Paso 1 y subí una lista que incluya la columna DNI.');
+    return;
+  }
+  const header = ['DNI','Apellido y Nombre','Minutos'];
+  const lines = [header.join(',')];
+  conDni.forEach(r=>{
+    const nombreCompleto = `${r.apellido}, ${r.nombre}`;
+    const minutosPunto = String(r.minutos).replace(',', '.');
+    const row = [r.dni, nombreCompleto, minutosPunto].map(v=>{
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+    });
+    lines.push(row.join(','));
+  });
+  const csv = lines.join('\r\n'); // sin BOM ni ; en ningún campo, para que el separador se detecte bien
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  triggerDownload(blob, `Asistencia_SIGEJ_${sanitizeFilename(claseLabelUsed)}.csv`);
+
+  const sinDni = currentResults.length - conDni.length;
+  if(sinDni>0){
+    zoomStatus.className='status warn';
+    zoomStatus.textContent = `Descargado. Ojo: ${sinDni} alumno(s) sin DNI quedaron afuera de este archivo — cargalos a mano en "Gestión Manual" dentro de SIGEJ.`;
+  }
+});
+
+document.getElementById('downloadCsv').addEventListener('click', ()=>{
+  const header = ['Nombre','Apellido(s)','Correo','Total minutos'];
+  const lines = [header.join(',')];
+  currentResults.forEach(r=>{
+    const row = [r.nombre, r.apellido, r.correo, r.minutos].map(v=>{
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+    });
+    lines.push(row.join(','));
+  });
+  const csv = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  triggerDownload(blob, `Asistencia_${sanitizeFilename(claseLabelUsed)}.csv`);
+});
+
+document.getElementById('downloadXlsx').addEventListener('click', ()=>{
+  const wsData = [
+    ['Nombre','Apellido(s)','Correo','Presente','Minutos']
+  ];
+  currentResults.forEach(r=>{
+    wsData.push([r.nombre, r.apellido, r.correo, r.minutos>0?'Sí':'No', r.minutos]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{wch:22},{wch:22},{wch:32},{wch:12},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Asistencia');
+  XLSX.writeFile(wb, `Asistencia_${sanitizeFilename(claseLabelUsed)}.xlsx`);
+});
+
+function sanitizeFilename(s){
+  return (s||'clase').replace(/[^a-z0-9_\-]+/gi,'_');
+}
+
+function triggerDownload(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ---------- Init ----------
+loadRoster();
+</script>
+</body>
+</html>
